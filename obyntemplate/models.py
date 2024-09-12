@@ -13,5 +13,5 @@ class GuildModel(Base):
     
     guild_id = Column(BigInteger, primary_key=True)
     prefix = Column(String, default="!")
-    welcome_channel = Column(BigInteger)
-    welcome_message = Column(String)
+    welcome_channel = Column(BigInteger, default=None)
+    welcome_message = Column(String, default="Welcome to the server!")
