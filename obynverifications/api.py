@@ -1,6 +1,6 @@
 from quart import Blueprint, jsonify
 
-module_api_bp = Blueprint('template', __name__)
+module_api_bp = Blueprint('verification', __name__)
 
 @module_api_bp.route("/example", methods=["GET"])
 async def example_endpoint():

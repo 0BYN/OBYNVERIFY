@@ -1,7 +1,8 @@
 from typing import List, Dict, Any, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from .models import GuildModel  # Assuming this is the SQLAlchemy model
+from .models import VerificationGuild
+from sqlalchemy.orm.attributes import flag_modified
 
 # Typing definitions
 Configuration = Dict[str, Union[str, Dict[str, Union[str, Dict[str, str]]]]]
@@ -11,19 +12,69 @@ Category = Dict[str, Dict[str, Union[str, Dict[str, str]]]]
 def ConfigData() -> Dict[str, Union[str, Dict[str, Union[str, Dict[str, Category]]]]]:
     return {
         "CONFIG_DATA": {
-            "TITLE": "Template Settings",
-            "DESCRIPTION": "Settings for the Template Module",
+            "TITLE": "Verification Settings",
+            "DESCRIPTION": "Settings for the Verification Module",
             "CONFIGURATION": {
                 "CATEGORIES": {
-                    "TEMPLATE": {
-                        "TITLE": "Template",
-                        "welcome_channel": {
+                    "VERIFICATION": {
+                        "TITLE": "Verification",
+                        "verification_logging_channel": {
+                            "TYPE": "CHANNEL",
+                            "DESCRIPTION": "Channel to log verification events"
+                        },
+                        "verification_questions": {
+                            "TYPE": "TEXT_LIST",
+                            "DESCRIPTION": "List of verification questions"
+                        },
+                        "unverified_role_ids": {
+                            "TYPE": "ROLE_LIST",
+                            "DESCRIPTION": "Roles assigned to unverified users"
+                        },
+                        "verified_role_ids": {
+                            "TYPE": "ROLE_LIST",
+                            "DESCRIPTION": "Roles assigned to verified users"
+                        },
+                        "verification_instructions": {
+                            "TYPE": "MESSAGE",
+                            "DESCRIPTION": "Instructions for the verification process"
+                        },
+                        "pending_verifications_channel_id": {
+                            "TYPE": "CHANNEL",
+                            "DESCRIPTION": "Channel for pending verifications"
+                        },
+                        "auto_verify_on_rejoin": {
+                            "TYPE": "BOOLEAN",
+                            "DESCRIPTION": "Automatically verify users who rejoin"
+                        }
+                    },
+                    "WELCOME": {
+                        "TITLE": "Welcome",
+                        "welcome_role_id": {
+                            "TYPE": "ROLE",
+                            "DESCRIPTION": "Role assigned to new members"
+                        },
+                        "welcome_channel_id": {
                             "TYPE": "CHANNEL",
                             "DESCRIPTION": "Channel to send welcome messages"
                         },
                         "welcome_message": {
                             "TYPE": "MESSAGE",
-                            "DESCRIPTION": "Welcome message"
+                            "DESCRIPTION": "Welcome message for new members"
+                        },
+                        "joining_message": {
+                            "TYPE": "MESSAGE",
+                            "DESCRIPTION": "Message sent when a user joins"
+                        },
+                        "welcome_message_banner_url": {
+                            "TYPE": "MESSAGE",
+                            "DESCRIPTION": "URL for the welcome message banner"
+                        }
+                    },
+                    "STAFF": {
+                        "TITLE": "Staff",
+                        "staff_role_id": {
+                            "TYPE": "ROLE",
+                            "DESCRIPTION": "Role assigned to staff members"
                         }
                     }
                 }
@@ -79,11 +130,11 @@ def get_config_category_setting_options(category_name: str, setting: str) -> Uni
 
 async def get_guild_configurations(guild_id: str, session: AsyncSession) -> Dict[str, Any]:
     async with session.begin():
-        stmt = select(GuildModel).filter_by(guild_id=guild_id)
+        stmt = select(VerificationGuild).filter_by(guild_id=guild_id)
         result = await session.execute(stmt)
         guild = result.scalar()
         if not guild:
-            new_guild = GuildModel(guild_id=guild_id)
+            new_guild = VerificationGuild(guild_id=guild_id)
             session.add(new_guild)
             await session.commit()
             return new_guild
@@ -93,15 +144,19 @@ async def get_guild_configurations(guild_id: str, session: AsyncSession) -> Dict
 async def set_guild_configuration(guild_id: str, session: AsyncSession, data: Dict[str, Any]) -> None:
     try:
         async with session.begin():
-            stmt = select(GuildModel).filter_by(guild_id=guild_id)
+            stmt = select(VerificationGuild).filter_by(guild_id=guild_id)
             result = await session.execute(stmt)
             guild = result.scalar()
 
             if guild:
                 for key, value in data.items():
-                    setattr(guild, key, value)
+                    if isinstance(value, list):
+                        setattr(guild, key, value)
+                        flag_modified(guild, key)
+                    else:
+                        setattr(guild, key, value)
             else:
-                new_guild = GuildModel(guild_id=guild_id, **data)
+                new_guild = VerificationGuild(guild_id=guild_id, **data)
                 session.add(new_guild)
 
             await session.commit()
