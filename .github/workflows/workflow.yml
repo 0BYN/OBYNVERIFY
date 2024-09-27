@@ -1,52 +1,39 @@
-# This workflow will upload a Python Package using Twine when a release is created
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-name: Publish Python Package
+name: Upload Python Package
 
 on:
   push:
     branches:
-      - main  # Change this to whatever branch you want to trigger the action on
-  pull_request:
-    branches:
-      - main  # Optional: Can trigger on PRs too if you want
+      - "main"  # Runs this workflow only on the main branch
+
+permissions:
+  contents: write  # Necessary to allow writing changes (in case of version bump)
 
 jobs:
-  publish:
-    name: Publish Python Package to PyPI
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
     # Step 1: Checkout the code
-    - name: Check out the repository
-      uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
-    # Step 2: Set up Python
-    - name: Set up Python 3.x
-      uses: actions/setup-python@v4
+    # Step 2: Set up Python environment
+    - name: Set up Python
+      uses: actions/setup-python@v3
       with:
-        python-version: '3.x'
+        python-version: '3.x'  # Uses Python 3.x, change if you need a specific version
 
-    # Step 3: Install dependencies (wheel, setuptools, twine)
-    - name: Install dependencies
+    # Step 3: Upgrade pip and install necessary build tools
+    - name: Install build tools
       run: |
         python -m pip install --upgrade pip
-        pip install setuptools wheel twine
+        pip install build
 
-    # Step 4: Build the package
-    - name: Build the package
-      run: |
-        python setup.py sdist bdist_wheel
+    # Step 4: Build the package (creates the dist directory with the package files)
+    - name: Build package
+      run: python -m build
 
     # Step 5: Publish the package to PyPI
-    - name: Publish to PyPI
+    - name: Publish package
+      uses: pypa/gh-action-pypi-publish@v1.6.4  # This is the latest stable tag
       with:
-        user: __token__
-        password: ${{ secrets.PYPI_API_KEY }}
-      run: |
-        python -m twine upload dist/* --skip-existing
+        password: ${{ secrets.PYPI_API_KEY }}  # Your PyPI token stored in GitHub Secrets
