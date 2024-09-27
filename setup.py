@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="obyn-obynverification",
+    name="obyn-obynverifications",
     version="0.1.1",
     description="An verification plugin for ObynBot",
     packages=find_packages(),
