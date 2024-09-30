@@ -23,7 +23,7 @@ def ConfigData() -> Dict[str, Union[str, Dict[str, Union[str, Dict[str, Category
                             "DESCRIPTION": "Channel to log verification events"
                         },
                         "verification_questions": {
-                            "TYPE": "TEXT_LIST",
+                            "TYPE": "QUESTION_LIST",
                             "DESCRIPTION": "List of verification questions"
                         },
                         "unverified_role_ids": {
@@ -45,6 +45,14 @@ def ConfigData() -> Dict[str, Union[str, Dict[str, Union[str, Dict[str, Category
                         "auto_verify_on_rejoin": {
                             "TYPE": "BOOLEAN",
                             "DESCRIPTION": "Automatically verify users who rejoin"
+                        },
+                        "classic_mode": {
+                            "TYPE": "BOOLEAN",
+                            "DESCRIPTION": "Classic mode for the verification process (DM)"
+                        },
+                        "questioning_category_id": {
+                            "TYPE": "CHANNEL_CATEGORY",
+                            "DESCRIPTION": "Category for the verification questions"
                         }
                     },
                     "WELCOME": {
@@ -59,16 +67,16 @@ def ConfigData() -> Dict[str, Union[str, Dict[str, Union[str, Dict[str, Category
                         },
                         "welcome_message": {
                             "TYPE": "MESSAGE",
-                            "DESCRIPTION": "Welcome message for new members"
+                            "DESCRIPTION": "Welcome message after verified"
                         },
                         "joining_message": {
                             "TYPE": "MESSAGE",
-                            "DESCRIPTION": "Message sent when a user joins"
+                            "DESCRIPTION": "Message sent to user DM when they join"
                         },
                         "welcome_message_banner_url": {
                             "TYPE": "MESSAGE",
                             "DESCRIPTION": "URL for the welcome message banner"
-                        }
+                        },
                     },
                     "STAFF": {
                         "TITLE": "Staff",
@@ -150,7 +158,10 @@ async def set_guild_configuration(guild_id: str, session: AsyncSession, data: Di
 
             if guild:
                 for key, value in data.items():
-                    if isinstance(value, list):
+                    if isinstance(value, list) and all(isinstance(item, int) for item in value):
+                        setattr(guild, key, [int(item) for item in value])
+                        flag_modified(guild, key)
+                    elif isinstance(value, list):
                         setattr(guild, key, value)
                         flag_modified(guild, key)
                     else:

@@ -1,10 +1,11 @@
+from datetime import datetime
 from enum import Enum
 import io
 from typing import Optional, Literal
 from uuid import uuid4
 
 import disnake
-from sqlalchemy import BigInteger, Boolean, Column, String, ARRAY, Text, update, delete, select
+from sqlalchemy import JSON, BigInteger, Boolean, Column, DateTime, String, ARRAY, Text, update, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -39,6 +40,8 @@ class VerificationGuild(Base):
     welcome_message = Column(Text, default=None)
     joining_message = Column(Text, default=None)
     welcome_message_banner_url = Column(Text, default=None)
+    classic_mode = Column(Boolean, default=False)
+    questioning_category_id = Column(BigInteger, default=None)
 
     staff_role_id = Column(BigInteger, default=None)
     
@@ -63,3 +66,8 @@ class VerificationApp(Base):
     active = Column(Boolean, default=True)
     status = Column(String, default=VerificationStatus.PENDING.value)
     
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
+    
+    embed_data = Column(JSON, default=None)
+    denied_reason = Column(Text, default=None)

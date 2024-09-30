@@ -235,7 +235,7 @@ async def close_verification(
     async with bot.db_session() as session:
         # Update the application
         app = select(VerificationApp).where(VerificationApp.user_id == responder.id, VerificationApp.guild_id == guild.id)
-        await session.execute(update(VerificationApp).where(VerificationApp.user_id == responder.id, VerificationApp.guild_id == guild.id).values(active=False, status=status.value))
+        await session.execute(update(VerificationApp).where(VerificationApp.user_id == responder.id, VerificationApp.guild_id == guild.id).values(active=False, status=status.value, denied_reason=reason if status in [VerificationStatus.DENIED, VerificationStatus.BANNED, VerificationStatus.KICKED] else None))
         await session.commit()
         
 
@@ -258,7 +258,7 @@ async def check_user_left(message: disnake.Message, bot, user_id: int) -> bool:
         verification = await get_application_uid(bot, user_id, guild.id)
         if verification:
             async with bot.db_session() as session:
-                session.execute(update(VerificationApp).where(VerificationApp.user_id == user_id, VerificationApp.guild_id == guild.id).values(active=False, status=VerificationStatus.LEFT.value))
+                session.execute(update(VerificationApp).where(VerificationApp.user_id == user_id, VerificationApp.guild_id == guild.id, VerificationApp.active == True).values(active=False, status=VerificationStatus.LEFT.value, denied_reason=f"User Left"))
                 await session.commit()
         return True
     return False

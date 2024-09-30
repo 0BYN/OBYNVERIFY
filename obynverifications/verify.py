@@ -239,6 +239,7 @@ class QuestionModal(disnake.ui.Modal):
                 user_id=interaction.user.id,
                 guild_id=interaction.guild.id,
                 pending_verification_id=message.id
+                
             )
                 session.add(new_app)
                 await session.commit()
@@ -619,6 +620,42 @@ class ActionButton(disnake.ui.View):
             return
         await interaction.response.send_message(verification_data.user_id, ephemeral=True)
         return
+    
+    @disnake.ui.button(
+        label="History", style=disnake.ButtonStyle.gray, custom_id="verification:history"
+    )
+    async def history(self, button, interaction: disnake.MessageInteraction):
+        async with interaction.bot.db_session() as session:
+            verification_data = await get_verif_delete(interaction, session)
+        if verification_data is None:
+            return
+
+        user_id = verification_data.user_id
+        guild_id = interaction.guild_id
+
+        # Query for all verification applications for this user in this guild
+        stmt = select(VerificationApp).where(
+            VerificationApp.user_id == user_id,
+            VerificationApp.guild_id == guild_id
+        ).order_by(VerificationApp.created_at.desc())
+        result = await session.execute(stmt)
+        applications = result.scalars().all()
+
+        if not applications:
+            await interaction.response.send_message("No verification history found for this user.", ephemeral=True)
+            return
+
+        embed = obyn_embed(interaction.user)
+        embed.title = f"Verification History for User ID: {user_id}"
+
+        for app in applications:
+            status = app.status
+            date = app.created_at
+            reason = app.denied_reason
+            value = f"Status: {status}\nDate: {date}\nReason: {reason}"
+            embed.add_field(name=f"Application ID: {app.id}", value=value, inline=False)
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 def setup(bot: commands.Bot):
@@ -679,7 +716,6 @@ async def accept_user(bot: Client, guild_data: VerificationGuild, message: disna
             embed.set_image(url=guild_data.welcome_message_banner_url)
     await welcome_channel.send(
         f"{role.mention if role else ''}\nWelcome {user.mention} to the server", embed=embed)
-    await message.channel.send("Application accepted!")
     return
 
 
