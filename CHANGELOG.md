@@ -2,6 +2,16 @@
 
 Verification System for OBYN Bots
 
+## 0.2.0
+
+### Added
+- Verification History
+- Added `created_at` and `updated_at` to the verification table
+- Added `denied_reason` to the verification table
+- Changed verification to post questioning to a set channel
+
+
+
 ## 0.0.1 - Sept. 20 2024
 
 ### Added
